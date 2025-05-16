@@ -15,8 +15,7 @@ sealed interface QuotesState {
     fun Display()
 
     data object Loading : QuotesState {
-        override val isRefreshing: Boolean
-            get() = true
+        override val isRefreshing: Boolean = false
         @Composable
         override fun Display() {
             Box(modifier = Modifier.fillMaxSize()) {
@@ -27,10 +26,9 @@ sealed interface QuotesState {
 
     data class Retrieved(
         val quotes: List<Quote> = listOf(),
-        val queryInput: QueryInput = QueryInput()
+        val queryInput: QueryInput = QueryInput(),
+        override val isRefreshing: Boolean = false
     ) : QuotesState {
-        override val isRefreshing: Boolean
-            get() = false
         @Composable
         override fun Display() {
             QuotesList(quotes)
@@ -38,10 +36,9 @@ sealed interface QuotesState {
     }
 
     data class Error(
-        val exception: Throwable
+        val exception: Throwable,
+        override val isRefreshing: Boolean = false
     ) : QuotesState {
-        override val isRefreshing: Boolean
-            get() = false
         @Composable
         override fun Display() {
             Box(modifier = Modifier.fillMaxSize()) {

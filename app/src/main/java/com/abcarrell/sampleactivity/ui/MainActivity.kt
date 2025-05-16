@@ -88,9 +88,8 @@ fun MainScreen(onQuotes: () -> Unit, onSearch: () -> Unit, onImage: () -> Unit, 
 @Composable
 fun QuotesScreen(viewModel: MainViewModel, modifier: Modifier = Modifier) {
     val quotes = viewModel.quotesState.collectAsStateWithLifecycle()
-    val isRefreshing = viewModel.isRefreshing.collectAsStateWithLifecycle()
     PullToRefreshBox(
-        isRefreshing = isRefreshing.value,
+        isRefreshing = quotes.value.isRefreshing,
         onRefresh = { viewModel.refreshData() },
         modifier = modifier,
     ) {
