@@ -10,12 +10,13 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import org.koin.core.module.dsl.viewModel
+import org.koin.core.qualifier.qualifier
 import org.koin.dsl.module
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 @ExperimentalCoroutinesApi
-fun provideAppModule() = module {
+fun appModule() = module {
     single {
         OkHttpClient.Builder()
             .addInterceptor(HttpLoggingInterceptor().apply { setLevel(HttpLoggingInterceptor.Level.BODY) })
@@ -32,10 +33,19 @@ fun provideAppModule() = module {
     }
 
     single<QuotesRepository> {
-        QuotesRepositoryImpl(get(), get())
+        QuotesRepositoryImpl(
+            get(),
+            get(qualifier = qualifier<AppModule.QuoteResponseDataMapper>())
+        )
     }
 
-    single { responseDataMapper<QuoteResponse>() }
+    single(qualifier = qualifier<AppModule.QuoteResponseDataMapper>()) {
+        responseDataMapper<QuoteResponse>()
+    }
 
-    viewModel { MainViewModel(get()) }
+    viewModel<MainViewModel> { MainViewModel(get()) }
+}
+
+object AppModule {
+    object QuoteResponseDataMapper
 }

@@ -10,7 +10,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.WhileSubscribed
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.filter
@@ -21,10 +20,10 @@ import kotlinx.coroutines.flow.update
 
 @ExperimentalCoroutinesApi
 class MainViewModel(private val quotesRepository: QuotesRepository) : ViewModel() {
-    private val isRefreshingFlow = MutableStateFlow(false)
+    private val isRefreshingFlow by lazy { MutableStateFlow(false) }
 
     private val quotesResultFlow: Flow<Result<List<Quote>>> = flow {
-        emit(Unit)
+        emit(true)
         emitAll(isRefreshingFlow.filter { it })
     }.flatMapLatest {
         flow {
@@ -37,20 +36,21 @@ class MainViewModel(private val quotesRepository: QuotesRepository) : ViewModel(
 
     private val queryInputFlow: MutableStateFlow<QueryInput> by lazy { MutableStateFlow(QueryInput()) }
 
-    val quotesState = combine(isRefreshingFlow, quotesResultFlow, queryInputFlow) { refreshing, result, queryInput ->
-        result.fold({ list ->
-            val filteredList = list.filter { quote ->
-                quote.author.contains(queryInput.input.orEmpty(), ignoreCase = true)
-            }
-            QuotesState.Retrieved(filteredList, queryInput, refreshing)
-        }, { e ->
-            QuotesState.Error(e, refreshing)
-        })
-    }.stateIn(
-        viewModelScope,
-        SharingStarted.WhileSubscribed(TIMEOUT, REPLAY_EXPIRES - TIMEOUT),
-        QuotesState.Loading
-    )
+    val quotesState =
+        combine(isRefreshingFlow, quotesResultFlow, queryInputFlow) { isRefreshing, quotesResult, queryInput ->
+            quotesResult.fold({ list ->
+                val filteredList = list.filter { quote ->
+                    quote.author.contains(queryInput.input.orEmpty(), ignoreCase = true)
+                }
+                QuotesState.Retrieved(filteredList, queryInput, isRefreshing)
+            }, { e ->
+                QuotesState.Error(e, isRefreshing)
+            })
+        }.stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(),
+            QuotesState.Loading
+        )
 
     fun updateQueryString(input: String) {
         queryInputFlow.update { it.copy(input = input) }
@@ -58,11 +58,6 @@ class MainViewModel(private val quotesRepository: QuotesRepository) : ViewModel(
 
     fun refreshData() {
         isRefreshingFlow.update { true }
-    }
-
-    companion object {
-        private val TIMEOUT = 1.seconds
-        private val REPLAY_EXPIRES = 10.seconds
     }
 }
 
