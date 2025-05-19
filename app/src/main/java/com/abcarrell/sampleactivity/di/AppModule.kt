@@ -6,6 +6,7 @@ import com.abcarrell.sampleactivity.data.QuotesRepository
 import com.abcarrell.sampleactivity.data.QuotesRepositoryImpl
 import com.abcarrell.sampleactivity.data.responseDataMapper
 import com.abcarrell.sampleactivity.ui.MainViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -35,9 +36,12 @@ fun appModule() = module {
     single<QuotesRepository> {
         QuotesRepositoryImpl(
             get(),
-            get(qualifier = qualifier<AppModule.QuoteResponseDataMapper>())
+            get(qualifier = qualifier<AppModule.QuoteResponseDataMapper>()),
+            get(qualifier = qualifier<AppModule.IODispatcher>())
         )
     }
+
+    single(qualifier<AppModule.IODispatcher>()) { Dispatchers.IO }
 
     single(qualifier = qualifier<AppModule.QuoteResponseDataMapper>()) {
         responseDataMapper<QuoteResponse>()
@@ -48,4 +52,5 @@ fun appModule() = module {
 
 object AppModule {
     object QuoteResponseDataMapper
+    object IODispatcher
 }
